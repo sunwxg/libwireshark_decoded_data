@@ -18,6 +18,8 @@
 #include <wireshark/epan/ftypes/ftypes.h>
 #include <wireshark/epan/asm_utils.h>
 
+#define BUFSIZE 2048 * 100
+
 extern tvbuff_t *frame_tvbuff_new(const frame_data *fd, const guint8 *buf);
 static void timestamp_set(capture_file cfile);
 static const nstime_t *tshark_get_frame_ts(void *data, guint32 frame_num);
@@ -134,39 +136,6 @@ void clean()
 	epan_cleanup();
 }
 
-void print_each_packet_xml()
-{
-	epan_dissect_t *edt;
-
-	while (read_packet(&edt)) {
-
-		proto_tree_write_pdml(edt, stdout);
-
-		epan_dissect_free(edt);
-		edt = NULL;
-	}
-}
-
-void print_each_packet_text()
-{
-	epan_dissect_t *edt;
-	print_stream_t *print_stream;
-	print_args_t    print_args;
-
-	print_stream = print_stream_text_stdio_new(stdout);
-
-	print_args.print_hex = TRUE;
-	print_args.print_dissections = print_dissections_expanded;
-
-	while (read_packet(&edt)) {
-
-		proto_tree_print(&print_args, edt, print_stream);
-
-		epan_dissect_free(edt);
-		edt = NULL;
-	}
-}
-
 static void
 timestamp_set(capture_file cfile)
 {
@@ -227,8 +196,85 @@ cap_file_init(capture_file *cf)
 
 void print_usage(char *argv[])
 {
-	printf("Usage: %s -f <input_file> ", argv[0]);
-	printf("[-t <xml|text> (default xml)]\n");
+	printf("Usage: %s -f <input_file>\n", argv[0]);
+}
+
+static void
+print_field(proto_node *node, int *level, char **buf)
+{
+	if (node->finfo == NULL)
+		return;
+
+	//reset level when node is proto
+        if (node->finfo->hfinfo->type == FT_PROTOCOL)
+		*level = 0;
+
+	for (int i = 0; i < *level; i++) {
+		snprintf(*buf + strlen(*buf), BUFSIZE, "%s", ". ");
+	}
+
+	const char *name = node->finfo->hfinfo->abbrev;
+
+	fvalue_t fv = node->finfo->value;
+	char *value = fvalue_to_string_repr(&fv, FTREPR_DISPLAY, NULL);
+
+	if (value == NULL) {
+		snprintf(*buf + strlen(*buf), BUFSIZE, "[%s]\n", name);
+	} else {
+		snprintf(*buf + strlen(*buf), BUFSIZE, "[%s] %s\n", name, value);
+	}
+}
+
+static void
+proto_node_print(proto_tree *tree, int *level, char **buf)
+{
+	proto_node *node = tree;
+	proto_node *current;
+
+	if (!node)
+		return;
+
+	node = node->first_child;
+	while (node != NULL) {
+		current = node;
+		node    = current->next;
+
+		print_field(current, level, buf);
+
+		(*level)++;
+		proto_node_print(current, level, buf);
+		(*level)--;
+	}
+}
+
+void print_node(epan_dissect_t *edt)
+/*void print_node(proto_node *node)*/
+{
+	char *buf = calloc(sizeof(char), BUFSIZE);
+	int level = 0;
+	proto_tree *node = edt->tree;
+
+	print_field(node, &level, &buf);
+
+	level++;
+	proto_node_print(node, &level, &buf);
+
+	printf("%s\n", buf);
+
+	free(buf);
+}
+
+void print_each_packet_self_format()
+{
+	epan_dissect_t *edt;
+
+	while (read_packet(&edt)) {
+
+		print_node(edt);
+
+		epan_dissect_free(edt);
+		edt = NULL;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -236,23 +282,13 @@ int main(int argc, char* argv[])
 
 	int          err;
 	char        *filename = NULL;
-	print_type_t print_type = PRINT_XML;
 	int          opt;
 
-	while((opt = getopt(argc, argv, "f:t:")) != -1) {
+	while((opt = getopt(argc, argv, "f:")) != -1) {
 		switch(opt) {
 		case 'f':
 			filename = calloc(sizeof(char), strlen(optarg) + 1);
 			strncpy(filename, optarg, strlen(optarg));
-			break;
-		case 't':
-			if (strcmp(optarg, "xml") == 0) {
-				print_type = PRINT_XML;
-			} else if (strcmp(optarg, "text") == 0) {
-				print_type = PRINT_TEXT;
-			} else {
-				print_type = PRINT_XML;
-			}
 			break;
 		default:
 			print_usage(argv);
@@ -270,14 +306,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	switch (print_type) {
-	case PRINT_XML:
-		print_each_packet_xml();
-		break;
-	case PRINT_TEXT:
-		print_each_packet_text();
-		break;
-	}
+	print_each_packet_self_format();
 
 	clean();
 	return 0;
