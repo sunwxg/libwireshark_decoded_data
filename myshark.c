@@ -25,11 +25,6 @@ static void timestamp_set(capture_file cfile);
 static const nstime_t *tshark_get_frame_ts(void *data, guint32 frame_num);
 static void clean();
 
-typedef enum {
-	PRINT_XML,
-	PRINT_TEXT,
-}print_type_t;
-
 //global variable
 capture_file cfile;
 
@@ -248,7 +243,6 @@ proto_node_print(proto_tree *tree, int *level, char **buf)
 }
 
 void print_node(epan_dissect_t *edt)
-/*void print_node(proto_node *node)*/
 {
 	char *buf = calloc(sizeof(char), BUFSIZE);
 	int level = 0;

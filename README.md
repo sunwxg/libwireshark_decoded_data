@@ -1,5 +1,5 @@
-# Decode by libwireshark
-Use libwireshark to decode pcap file and print out as XML format or Text format like tshark.
+# libwireshark library decoded data
+Using libwireshark library to decode packet, the decoded data is stored in `struct epan_dissect`.
 
 # Install
 - ubuntu
