@@ -6,7 +6,7 @@ Using libwireshark library to decode packet, the decoded data is stored in `stru
 ```
 sudo apt-get install libwireshark-dev libglib2.0-dev libwiretap-dev
 make
-./myshark -f file.pcap -t text
+./myshark -f file.pcap
 ```
 
 # Debug
