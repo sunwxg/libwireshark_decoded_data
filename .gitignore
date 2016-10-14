@@ -1,3 +1,4 @@
 myshark
 .libs/*
 tags
+libs/libwireshark.so
