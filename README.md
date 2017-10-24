@@ -1,7 +1,7 @@
 # libwireshark library decoded data
 Using libwireshark library to decode packet, the decoded data is stored in `struct epan_dissect`.
 
-#Dependencies
+# Dpendencies
 * libwireshark library (version 1.12.8)
 
 * libglib2.0
