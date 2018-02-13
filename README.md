@@ -16,7 +16,7 @@ zypper in libwiretap7 libwsutil8 libwireshark9
 make source
 make
 
-./myshark -f file.pcap -t text
+./myshark -f file.pcap
 ```
 
 # Output
