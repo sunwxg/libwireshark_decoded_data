@@ -2,41 +2,21 @@
 Using libwireshark library to decode packet, the decoded data is stored in `struct epan_dissect`.
 
 # Dpendencies
-* libwireshark library (version 1.12.8)
+* libwireshark library (version 2.4.4)
 
 * libglib2.0
 
 # Install
-- ubuntu
+- openSUSE
 ```
-apt-get install libglib2.0-dev
+zypper in wireshark
+zypper in glib2 glib2-devel
+zypper in libwiretap7 libwsutil8 libwireshark9
 
-git clone https://github.com/sunwxg/decode_by_libwireshark.git
-
-cd decode_by_libwireshark
-cat libs/libwireshark.{00,01,02,03} > libs/libwireshark.so
-chmod 775 libs/libwireshark.so
-
+make source
 make
 
-./myshark -f file.pcap
-```
-
-# Debug
-Debug program to see how wireshark dissect packet.
-- Download wireshark source code(version 1.12.8) from www.wireshark.org
-- Uncompress source code and compile. Following [wireshark guide](https://www.wireshark.org/docs/wsug_html/#ChBuildInstallUnixBuild)
-- Export SRC_WIRESHARK as wireshark source code path
-```
-export SRC_WIRESHARK=<wireshark source code path>
-```
-- Make file
-```
-make debug
-```
-- Using GDB
-```
-libtool --mode=execute gdb ./myshark
+./myshark -f file.pcap -t text
 ```
 
 # Output
